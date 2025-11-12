@@ -1,6 +1,6 @@
-# Daily Hero Hub
+# System Interface
 
-Daily Hero Hub is a Solo Leveling inspired personal management system that helps you stay on top of quests, penalties, and progress tracking.
+System Interface is a Solo Leveling inspired personal management system that helps you stay on top of quests, penalties, and progress tracking.
 
 ## Tech Stack
 
