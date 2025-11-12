@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Solo Leveling System Theme - Dark Sci-Fi */
+    --background: 215 25% 7%;
+    --foreground: 180 100% 90%;
+
+    --card: 215 20% 10%;
+    --card-foreground: 180 100% 90%;
+
+    --popover: 215 22% 9%;
+    --popover-foreground: 180 100% 90%;
+
+    --primary: 188 95% 52%;
+    --primary-foreground: 215 25% 7%;
+
+    --secondary: 265 85% 65%;
+    --secondary-foreground: 215 25% 7%;
+
+    --muted: 215 15% 15%;
+    --muted-foreground: 180 20% 60%;
+
+    --accent: 265 85% 65%;
+    --accent-foreground: 215 25% 7%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 180 100% 90%;
+
+    --border: 215 15% 18%;
+    --input: 215 15% 18%;
+    --ring: 188 95% 52%;
+
+    --radius: 0.75rem;
+
+    /* Custom System Colors */
+    --system-glow: 188 95% 52%;
+    --system-purple: 265 85% 65%;
+    --system-dark: 215 25% 7%;
+    --system-card: 215 20% 10%;
+    --system-border: 215 15% 18%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(188 95% 52% / 0.2), hsl(265 85% 65% / 0.2));
+    --gradient-card: linear-gradient(180deg, hsl(215 20% 12%), hsl(215 20% 8%));
+    
+    /* Shadows & Glows */
+    --glow-primary: 0 0 20px hsl(188 95% 52% / 0.3), 0 0 40px hsl(188 95% 52% / 0.1);
+    --glow-secondary: 0 0 20px hsl(265 85% 65% / 0.3), 0 0 40px hsl(265 85% 65% / 0.1);
+    --shadow-elevated: 0 10px 40px hsl(215 25% 3% / 0.5);
+
+    --sidebar-background: 215 22% 9%;
+    --sidebar-foreground: 180 100% 90%;
+    --sidebar-primary: 188 95% 52%;
+    --sidebar-primary-foreground: 215 25% 7%;
+    --sidebar-accent: 215 15% 15%;
+    --sidebar-accent-foreground: 180 100% 90%;
+    --sidebar-border: 215 15% 18%;
+    --sidebar-ring: 188 95% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
