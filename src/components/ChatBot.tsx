@@ -50,6 +50,13 @@ export const ChatBot = ({ onClose }: ChatBotProps) => {
         content: data.message,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Show XP notification if awarded
+      if (data.xpAwarded && data.xpAwarded > 0) {
+        toast.success(`+${data.xpAwarded} XP earned!`, {
+          description: "Keep interacting to level up!",
+        });
+      }
     } catch (error: any) {
       console.error("Chat error:", error);
       toast.error(error.message || "Failed to send message");

@@ -54,6 +54,10 @@ All colors MUST be HSL.
     --glow-primary: 0 0 20px hsl(188 95% 52% / 0.3), 0 0 40px hsl(188 95% 52% / 0.1);
     --glow-secondary: 0 0 20px hsl(265 85% 65% / 0.3), 0 0 40px hsl(265 85% 65% / 0.1);
     --shadow-elevated: 0 10px 40px hsl(215 25% 3% / 0.5);
+    --shadow-neon: 0 0 5px hsl(188 95% 52% / 0.5), 0 0 15px hsl(188 95% 52% / 0.3), 0 0 30px hsl(188 95% 52% / 0.1);
+    
+    /* Animations */
+    --scan-line: linear-gradient(0deg, transparent, hsl(188 95% 52% / 0.1), transparent);
 
     --sidebar-background: 215 22% 9%;
     --sidebar-foreground: 180 100% 90%;

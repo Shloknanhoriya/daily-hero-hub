@@ -1,78 +1,90 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
 
   try {
-    const { messages } = await req.json();
-    const CHAT_API_URL = Deno.env.get("CHAT_API_URL");
-    const CHAT_API_KEY = Deno.env.get("CHAT_API_KEY");
-
-    if (!CHAT_API_URL) throw new Error("CHAT_API_URL is not configured");
-
-    console.log("Chat request received with", messages.length, "messages");
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    if (CHAT_API_KEY) {
-      headers.Authorization = `Bearer ${CHAT_API_KEY}`;
-    }
-
-    const response = await fetch(CHAT_API_URL, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a helpful AI assistant for a Solo Leveling-inspired quest management system. You help users set reminders, manage their quests, and provide motivation. When users ask to set a reminder, acknowledge it and suggest they add it as a quest in their system. Keep responses concise and energetic, like a game system would."
-          },
-          ...messages,
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI provider error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), 
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), 
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`AI provider error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("AI response received");
-
-    return new Response(
-      JSON.stringify({ message: data.choices[0].message.content }), 
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const { messages } = await req.json()
     
-  } catch (e) {
-    console.error("Chat error:", e);
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization')
+    
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: authHeader ? { Authorization: authHeader } : {},
+        },
+      }
+    )
+
+    // Get user from JWT
+    const { data: { user } } = await supabaseClient.auth.getUser()
+
+    const { data, error } = await supabaseClient.functions.invoke('ai-gateway', {
+      body: {
+        model: 'openai/gpt-5-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful AI assistant integrated into a Solo Leveling-style quest management system. Help users manage their tasks, set reminders, and stay motivated. Be encouraging and use gaming terminology when appropriate. Keep responses concise and actionable.'
+          },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      }
+    })
+
+    if (error) {
+      console.error('AI Gateway error:', error)
+      throw error
+    }
+
+    // Award XP for interaction (only if user is authenticated)
+    let xpAwarded = 0
+    if (user) {
+      try {
+        const { data: xpData, error: xpError } = await supabaseClient.rpc('award_xp', {
+          p_user_id: user.id,
+          p_xp_amount: 5,
+          p_activity_type: 'chat_interaction',
+          p_description: 'Interacted with AI assistant'
+        })
+        
+        if (!xpError && xpData && xpData.length > 0) {
+          xpAwarded = 5
+        }
+      } catch (xpErr) {
+        console.error('Error awarding XP:', xpErr)
+        // Don't fail the whole request if XP fails
+      }
+    }
+
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), 
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      JSON.stringify({ 
+        message: data.choices[0].message.content,
+        xpAwarded: xpAwarded
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    console.error('Error in chat function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   }
-});
+})

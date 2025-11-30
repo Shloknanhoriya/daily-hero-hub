@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SystemHeader } from "@/components/SystemHeader";
 import { QuestCard, Quest } from "@/components/QuestCard";
 import { PenaltyCard, Penalty } from "@/components/PenaltyCard";
@@ -7,18 +7,27 @@ import { ChatBot } from "@/components/ChatBot";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { useUserProgress } from "@/hooks/useUserProgress";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [showChatBot, setShowChatBot] = useState(false);
-  const [playerData] = useState({
-    name: "AIML Student",
-    level: 0,
-    currentXP: 0,
-    nextLevelXP: 1000,
-    streak: 0,
-  });
+  const { progress, isLoading, updateStreak, awardXP, nextLevelXP } = useUserProgress();
+  const navigate = useNavigate();
+
+  // Update streak on mount
+  useEffect(() => {
+    updateStreak.mutate();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logged out successfully");
+    navigate("/auth");
+  };
 
   const [quests, setQuests] = useState<Quest[]>([
     {
@@ -89,6 +98,13 @@ const Index = () => {
     setQuests((prev) =>
       prev.map((quest) => {
         if (quest.id === questId && !quest.completed) {
+          // Award XP to the user
+          awardXP.mutate({
+            xpAmount: quest.xpReward,
+            activityType: "quest_completed",
+            description: quest.title,
+          });
+          
           toast.success(`Quest Completed! +${quest.xpReward} XP`, {
             description: quest.title,
             duration: 3000,
@@ -105,17 +121,41 @@ const Index = () => {
   const activePenalties = penalties.length;
   const completionRate = totalQuests > 0 ? Math.round((completedQuests / totalQuests) * 100) : 0;
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary text-2xl font-mono animate-glow-pulse">Loading System...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
       
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-primary rounded-full animate-float opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${5 + Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+      
       <div className="relative container mx-auto px-4 py-8 space-y-8 animate-slide-up">
         <SystemHeader
-          userName={playerData.name}
-          level={playerData.level}
-          currentXP={playerData.currentXP}
-          nextLevelXP={playerData.nextLevelXP}
-          streak={playerData.streak}
+          userName="Hunter"
+          level={progress?.level || 1}
+          currentXP={progress?.current_xp || 0}
+          nextLevelXP={nextLevelXP}
+          streak={progress?.streak || 0}
         />
 
         <StatsPanel
@@ -198,14 +238,25 @@ const Index = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Floating Chat Button */}
-        <Button
-          onClick={() => setShowChatBot(true)}
-          className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-glow"
-          size="icon"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
+        {/* Floating Buttons */}
+        <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+          <Button
+            onClick={() => setShowChatBot(true)}
+            className="h-14 w-14 rounded-full shadow-[0_0_30px_rgba(45,212,191,0.5)] hover:shadow-[0_0_50px_rgba(45,212,191,0.8)] transition-all animate-float"
+            size="icon"
+          >
+            <MessageSquare className="h-6 w-6" />
+          </Button>
+          
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="h-14 w-14 rounded-full border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all"
+            size="icon"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
 
         {/* ChatBot Modal */}
         {showChatBot && <ChatBot onClose={() => setShowChatBot(false)} />}
